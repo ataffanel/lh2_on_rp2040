@@ -69,8 +69,6 @@ int main() {
 
     // init the USB UART
     stdio_init_all();
-    sleep_ms(3000);
-    printf("Start code\n");
 
     // init the LEDs
     gpio_init(LED_RED_PIN);
