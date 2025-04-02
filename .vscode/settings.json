@@ -25,7 +25,10 @@
     "files.associations": {
         "pio_instructions.h": "c",
         "irq.h": "c",
-        "multicore.h": "c"
+        "multicore.h": "c",
+        "lh2_checkpoints.h": "c",
+        "gpio.h": "c",
+        "pio.h": "c"
     },
     //   "cmake.buildDirectory": "${workspaceFolder}/build"
 }

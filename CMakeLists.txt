@@ -46,6 +46,14 @@ add_compile_options(-Wall
         -Wno-maybe-uninitialized
         )
 
-# enable USB CDC serial
+# Setup location for the UART on the board
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+        PICO_DEFAULT_UART=1
+        PICO_DEFAULT_UART_TX_PIN=4
+        PICO_DEFAULT_UART_RX_PIN=5
+)
+
+# Enable STDIO
 pico_enable_stdio_usb(lh2 1)
+pico_enable_stdio_rtt(lh2 0)
 pico_enable_stdio_uart(lh2 0)
