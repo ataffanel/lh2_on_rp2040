@@ -395,6 +395,7 @@ void db_lh2_process_location(db_lh2_t *lh2) {
     lh2->locations[sweep][basestation].selected_polynomial = temp_selected_polynomial;
     // Mark the data point as processed
     lh2->data_ready[sweep][basestation] = DB_LH2_PROCESSED_DATA_AVAILABLE;
+    lh2->alive = true;  // Mark the sensor as alive
 }
 
 //=========================== private ==========================================

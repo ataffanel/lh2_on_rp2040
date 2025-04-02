@@ -52,6 +52,7 @@ typedef struct {
     db_lh2_data_ready_state_t data_ready[LH2_SWEEP_COUNT][LH2_BASESTATION_COUNT];  ///< Is the data in the buffer ready to send over radio, or has it already been sent ?
     uint8_t                  *spi_ring_buffer_count_ptr;                           ///< pointer to the SPI rung buffer packet count, so the user application can read how many spi captures are waiting to be processed.
     uint8_t                   sensor;                                              //< Which TS4231 sensor is associated with this data structure (valid values [0-3]).
+    bool                      alive;                                             ///< Have we received valid data from the sensor?
 } db_lh2_t;
 
 //=========================== public ===========================================

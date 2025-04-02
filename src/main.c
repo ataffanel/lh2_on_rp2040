@@ -37,6 +37,10 @@
 #define LH2_3_ENV_PIN   28
 #define TIMER_DELAY_US 100000
 
+#define LED_RED_PIN  22
+#define LED_YELLOW_PIN  21
+#define LED_GREEN_PIN  20
+
 
 //=========================== variables ========================================
 
@@ -68,6 +72,17 @@ int main() {
     sleep_ms(3000);
     printf("Start code\n");
 
+    // init the LEDs
+    gpio_init(LED_RED_PIN);
+    gpio_set_dir(LED_RED_PIN, GPIO_OUT);
+    gpio_init(LED_YELLOW_PIN);
+    gpio_set_dir(LED_YELLOW_PIN, GPIO_OUT);
+    gpio_init(LED_GREEN_PIN);
+    gpio_set_dir(LED_GREEN_PIN, GPIO_OUT);
+    gpio_put(LED_RED_PIN, 1);               // 1 is OFF
+    gpio_put(LED_YELLOW_PIN, 1);
+    gpio_put(LED_GREEN_PIN, 1);
+
     // LH2 config, before starting the second core
     db_lh2_init(&_lh2_0, sensor_0, LH2_0_DATA_PIN, LH2_0_ENV_PIN);
     db_lh2_init(&_lh2_1, sensor_1, LH2_1_DATA_PIN, LH2_1_ENV_PIN);
@@ -95,6 +110,44 @@ int main() {
                    _lh2_3.locations[0][0].selected_polynomial, _lh2_3.locations[0][0].lfsr_location, _lh2_3.locations[1][0].selected_polynomial, _lh2_3.locations[1][0].lfsr_location,
                    _lh2_3.locations[0][1].selected_polynomial, _lh2_3.locations[0][1].lfsr_location, _lh2_3.locations[1][1].selected_polynomial, _lh2_3.locations[1][1].lfsr_location);
             timer_0 = get_absolute_time();
+
+            // Count the number of alive sensors
+            uint8_t alive_count = 0;
+            if (_lh2_0.alive) {
+                alive_count++;
+            }
+            if (_lh2_1.alive) {
+                alive_count++;
+            }
+            if (_lh2_2.alive) {
+                alive_count++;
+            }
+            if (_lh2_3.alive) {
+                alive_count++;
+            }
+            _lh2_0.alive = false;
+            _lh2_1.alive = false;
+            _lh2_2.alive = false;
+            _lh2_3.alive = false;
+
+            // Set leds according to the number of alive sensors
+            if (alive_count == 2) {
+                gpio_put(LED_GREEN_PIN, 1); // 0 is ON
+                gpio_put(LED_YELLOW_PIN, 1);
+                gpio_put(LED_RED_PIN, 0);
+            } else if (alive_count == 3) {
+                gpio_put(LED_GREEN_PIN, 1);
+                gpio_put(LED_YELLOW_PIN, 0);
+                gpio_put(LED_RED_PIN, 0);
+            } else if (alive_count == 4) {
+                gpio_put(LED_GREEN_PIN, 0);
+                gpio_put(LED_YELLOW_PIN, 0);
+                gpio_put(LED_RED_PIN, 0);
+            } else {
+                gpio_put(LED_GREEN_PIN, 1);
+                gpio_put(LED_YELLOW_PIN, 1);
+                gpio_put(LED_RED_PIN, 1); // 0 is ON
+            }
         }
     }
 }
