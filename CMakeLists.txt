@@ -56,4 +56,4 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 # Enable STDIO
 pico_enable_stdio_usb(lh2 1)
 pico_enable_stdio_rtt(lh2 0)
-pico_enable_stdio_uart(lh2 0)
+pico_enable_stdio_uart(lh2 1)

@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "pico/util/queue.h"
+
 //=========================== defines ==========================================
 
 #define LH2_BASESTATION_COUNT 4                          ///< Number of supported concurrent basestations
@@ -55,6 +57,14 @@ typedef struct {
     bool                      alive;                                             ///< Have we received valid data from the sensor?
 } db_lh2_t;
 
+struct lh2_measurement {
+    uint8_t sensor;
+    uint32_t timestamp;
+    uint8_t selected_polynomial;
+    uint32_t lfsr_location;
+    uint32_t beamword;
+};
+
 //=========================== public ===========================================
 
 /**
@@ -72,7 +82,7 @@ void db_lh2_init(db_lh2_t *lh2, uint8_t sensor, const uint8_t gpio_d, const uint
  *
  * @param[in]   lh2 pointer to the lh2 instance
  */
-void db_lh2_process_location(db_lh2_t *lh2);
+void db_lh2_process_location(db_lh2_t *lh2, queue_t *measurements_queue);
 
 /**
  * @brief Start the LH2 frame acquisition

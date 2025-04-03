@@ -23,6 +23,7 @@
 #include "pico/time.h"
 #include "hardware/dma.h"
 #include "hardware/pio.h"
+#include "pico/util/queue.h"
 
 //=========================== defines =========================================
 
@@ -321,7 +322,7 @@ void db_lh2_stop(void) {
     // NRF_PPI->TASKS_CHG[PPI_SPI_GROUP].DIS = 1;
 }
 
-void db_lh2_process_location(db_lh2_t *lh2) {
+void db_lh2_process_location(db_lh2_t *lh2, queue_t *measurements_queue) {
     uint8_t sensor = lh2->sensor;  // Make a local copy of the sensor number, for readability's sake
 
     if (_lh2_vars[sensor].data.count == 0) {
@@ -396,6 +397,16 @@ void db_lh2_process_location(db_lh2_t *lh2) {
     // Mark the data point as processed
     lh2->data_ready[sweep][basestation] = DB_LH2_PROCESSED_DATA_AVAILABLE;
     lh2->alive = true;  // Mark the sensor as alive
+
+    // Push measurement in the queue
+    struct lh2_measurement measurement = {
+        .sensor              = sensor,
+        .timestamp           = to_us_since_boot(temp_timestamp) * 24,
+        .selected_polynomial = temp_selected_polynomial,
+        .lfsr_location       = lfsr_loc_temp,
+        .beamword            = temp_bits_sweep & 0x1FFFF,   // 17 bits
+    };
+    queue_add_blocking(measurements_queue, &measurement);
 }
 
 //=========================== private ==========================================
