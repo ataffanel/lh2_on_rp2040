@@ -169,7 +169,7 @@ int main() {
             //     measurement.sensor,
             //     measurement.selected_polynomial, measurement.lfsr_location, measurement.beamword, measurement.timestamp);
             packet[0] = (measurement.sensor & 0x03) 
-                        | (measurement.selected_polynomial & 0x3f) << 2;
+                        | ((measurement.selected_polynomial & 0x3f) << 2);
             uint32_t width = 100;
             measurement.beamword &= 0x1FFFF;
             measurement.lfsr_location &= 0x1FFFF;
@@ -182,7 +182,8 @@ int main() {
 
         if (absolute_time_diff_us(last_sync, get_absolute_time()) > SYNC_PERIOD_MS * 1000) {
             last_sync = get_absolute_time();
-            stdio_put_string(sync_packet, sizeof(sync_packet), false, false);        }
+            stdio_put_string(sync_packet, sizeof(sync_packet), false, false);
+        }
     }
 }
 

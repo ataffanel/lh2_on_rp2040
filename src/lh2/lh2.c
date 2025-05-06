@@ -401,7 +401,7 @@ void db_lh2_process_location(db_lh2_t *lh2, queue_t *measurements_queue) {
     // Push measurement in the queue
     struct lh2_measurement measurement = {
         .sensor              = sensor,
-        .timestamp           = to_us_since_boot(temp_timestamp) * 24,
+        .timestamp           = to_us_since_boot(temp_timestamp),
         .selected_polynomial = temp_selected_polynomial,
         .lfsr_location       = lfsr_loc_temp,
         .beamword            = temp_bits_sweep & 0x1FFFF,   // 17 bits
