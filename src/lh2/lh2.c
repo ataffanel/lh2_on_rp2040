@@ -422,17 +422,17 @@ void _initialize_ts4231(const uint8_t gpio_d, const uint8_t gpio_e) {
     // start the TS4231 initialization
     // Wiggle the Envelope and Data pins
     gpio_set_dir(gpio_e, GPIO_OUT);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 1);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 0);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 1);
-    sleep_us(10);
+    sleep_us(100);
     gpio_set_dir(gpio_d, GPIO_OUT);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_d, 1);
-    sleep_us(10);
+    sleep_us(100);
     // Turn the pins back to inputs
     gpio_set_dir(gpio_d, GPIO_IN);
     gpio_set_dir(gpio_e, GPIO_IN);
@@ -444,11 +444,11 @@ void _initialize_ts4231(const uint8_t gpio_d, const uint8_t gpio_e) {
     // Turn the Data and Envelope lines back to outputs and clear them.
     gpio_set_dir(gpio_d, GPIO_OUT);
     gpio_set_dir(gpio_e, GPIO_OUT);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_d, 0);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 0);
-    sleep_us(10);
+    sleep_us(100);
     // Send the magic configuration value, MSB first.
     for (uint8_t i = 0; i < 15; i++) {
 
@@ -460,63 +460,63 @@ void _initialize_ts4231(const uint8_t gpio_d, const uint8_t gpio_e) {
         }
 
         // Toggle the Envelope line as a clock.
-        sleep_us(10);
+        sleep_us(100);
         gpio_put(gpio_e, 1);
-        sleep_us(10);
+        sleep_us(100);
         gpio_put(gpio_e, 0);
-        sleep_us(10);
+        sleep_us(100);
     }
     // Finish send sequence and turn pins into inputs again.
     gpio_put(gpio_d, 0);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 1);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_d, 1);
-    sleep_us(10);
+    sleep_us(100);
     gpio_set_dir(gpio_d, GPIO_IN);
     gpio_set_dir(gpio_e, GPIO_IN);
     // Finish by waiting 10usec
-    sleep_us(10);
+    sleep_us(100);
 
     // Now read back the sequence that the TS4231 answers.
     gpio_set_dir(gpio_d, GPIO_OUT);
     gpio_set_dir(gpio_e, GPIO_OUT);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_d, 0);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 0);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_d, 1);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 1);
-    sleep_us(10);
+    sleep_us(100);
     // Set Data pin as an input, to receive the data
     gpio_set_dir(gpio_d, GPIO_IN);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 0);
-    sleep_us(10);
+    sleep_us(100);
     // Use the Envelope pin to output a clock while the data arrives.
     for (uint8_t i = 0; i < 14; i++) {
         gpio_put(gpio_e, 1);
-        sleep_us(10);
+        sleep_us(100);
         gpio_put(gpio_e, 0);
-        sleep_us(10);
+        sleep_us(100);
     }
 
     // Finish the configuration procedure
     gpio_set_dir(gpio_d, GPIO_OUT);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 1);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_d, 1);
-    sleep_us(10);
+    sleep_us(100);
 
     gpio_put(gpio_e, 0);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_d, 0);
-    sleep_us(10);
+    sleep_us(100);
     gpio_put(gpio_e, 1);
-    sleep_us(10);
+    sleep_us(100);
 
     gpio_set_dir(gpio_d, GPIO_IN);
     gpio_set_dir(gpio_e, GPIO_IN);

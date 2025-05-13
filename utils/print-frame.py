@@ -1,7 +1,7 @@
 import serial
 import struct
 
-board = serial.Serial('/dev/ttyUSB0', 115200)
+board = serial.Serial('/dev/ttyUSB0', 230600)
 
 SYNC_FRAME = [0xFF] * 12
 
@@ -24,12 +24,17 @@ while True:
     # print(frame.hex())
 
     # Ignore sync frames
-    # if buffer == SYNC_FRAME:
-        # continue
+    if all(x == 0xFF for x in list(frame)):
+        continue
 
     unpacked = struct.unpack('<BH', frame[0:3])
     sensor_id = unpacked[0] & 0x03
     lfsr = unpacked[0] >> 2
     width = unpacked[1]
 
-    print(f"Sensor ID: {sensor_id}, LFSR: {lfsr}, Width: {width}")
+    lfsr_loc = struct.unpack('<L', frame[3:6] + b'\0')[0]
+    beamword = struct.unpack('<L', frame[6:9] + b'\0')[0]
+    timestamp = struct.unpack('<L', frame[9:12] + b'\0')[0]
+
+
+    print(f"Sensor ID: {sensor_id}, LFSR: {lfsr}, Loc: {lfsr_loc}, Beamword: {beamword:05X}, Timestamp: {timestamp}")

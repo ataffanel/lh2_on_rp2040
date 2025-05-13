@@ -29,19 +29,23 @@
 
 //=========================== defines ==========================================
 
-#define LH2_0_DATA_PIN  13
-#define LH2_0_ENV_PIN   12
-#define LH2_1_DATA_PIN  18
-#define LH2_1_ENV_PIN   17
-#define LH2_2_DATA_PIN  1
-#define LH2_2_ENV_PIN   0
-#define LH2_3_DATA_PIN  29
-#define LH2_3_ENV_PIN   28
+#define LH2_0_DATA_PIN  1 
+#define LH2_0_ENV_PIN   0
+
+#define LH2_1_DATA_PIN  3
+#define LH2_1_ENV_PIN   2
+
+#define LH2_2_DATA_PIN  5
+#define LH2_2_ENV_PIN   4
+
+#define LH2_3_DATA_PIN  7
+#define LH2_3_ENV_PIN   6
+
 #define TIMER_DELAY_US 100000
 
-#define LED_RED_PIN  22
-#define LED_YELLOW_PIN  21
-#define LED_GREEN_PIN  20
+#define LED_RED_PIN  18
+#define LED_YELLOW_PIN 20  
+#define LED_GREEN_PIN  19
 
 #define SYNC_PERIOD_MS 500
 
@@ -110,58 +114,6 @@ int main() {
         db_lh2_process_location(&_lh2_0, &measurements_queue);
         db_lh2_process_location(&_lh2_1, &measurements_queue);
 
-        // if (absolute_time_diff_us(timer_0, get_absolute_time()) > TIMER_DELAY_US) {
-
-        //     printf("sen_0 (%d-%d %d-%d %d-%d %d-%d)   \tsen_1 (%d-%d %d-%d %d-%d %d-%d)   \tsen_2 (%d-%d %d-%d %d-%d %d-%d)   \tsen_3 (%d-%d %d-%d %d-%d %d-%d)\n",
-        //            _lh2_0.locations[0][0].selected_polynomial, _lh2_0.locations[0][0].lfsr_location, _lh2_0.locations[1][0].selected_polynomial, _lh2_0.locations[1][0].lfsr_location,
-        //            _lh2_0.locations[0][1].selected_polynomial, _lh2_0.locations[0][1].lfsr_location, _lh2_0.locations[1][1].selected_polynomial, _lh2_0.locations[1][1].lfsr_location,
-        //            _lh2_1.locations[0][0].selected_polynomial, _lh2_1.locations[0][0].lfsr_location, _lh2_1.locations[1][0].selected_polynomial, _lh2_1.locations[1][0].lfsr_location,
-        //            _lh2_1.locations[0][1].selected_polynomial, _lh2_1.locations[0][1].lfsr_location, _lh2_1.locations[1][1].selected_polynomial, _lh2_1.locations[1][1].lfsr_location,
-        //            _lh2_2.locations[0][0].selected_polynomial, _lh2_2.locations[0][0].lfsr_location, _lh2_2.locations[1][0].selected_polynomial, _lh2_2.locations[1][0].lfsr_location,
-        //            _lh2_2.locations[0][1].selected_polynomial, _lh2_2.locations[0][1].lfsr_location, _lh2_2.locations[1][1].selected_polynomial, _lh2_2.locations[1][1].lfsr_location,
-        //            _lh2_3.locations[0][0].selected_polynomial, _lh2_3.locations[0][0].lfsr_location, _lh2_3.locations[1][0].selected_polynomial, _lh2_3.locations[1][0].lfsr_location,
-        //            _lh2_3.locations[0][1].selected_polynomial, _lh2_3.locations[0][1].lfsr_location, _lh2_3.locations[1][1].selected_polynomial, _lh2_3.locations[1][1].lfsr_location);
-        //     timer_0 = get_absolute_time();
-
-        //     // Count the number of alive sensors
-        //     uint8_t alive_count = 0;
-        //     if (_lh2_0.alive) {
-        //         alive_count++;
-        //     }
-        //     if (_lh2_1.alive) {
-        //         alive_count++;
-        //     }
-        //     if (_lh2_2.alive) {
-        //         alive_count++;
-        //     }
-        //     if (_lh2_3.alive) {
-        //         alive_count++;
-        //     }
-        //     _lh2_0.alive = false;
-        //     _lh2_1.alive = false;
-        //     _lh2_2.alive = false;
-        //     _lh2_3.alive = false;
-
-        //     // Set leds according to the number of alive sensors
-        //     if (alive_count == 2) {
-        //         gpio_put(LED_GREEN_PIN, 1); // 0 is ON
-        //         gpio_put(LED_YELLOW_PIN, 1);
-        //         gpio_put(LED_RED_PIN, 0);
-        //     } else if (alive_count == 3) {
-        //         gpio_put(LED_GREEN_PIN, 1);
-        //         gpio_put(LED_YELLOW_PIN, 0);
-        //         gpio_put(LED_RED_PIN, 0);
-        //     } else if (alive_count == 4) {
-        //         gpio_put(LED_GREEN_PIN, 0);
-        //         gpio_put(LED_YELLOW_PIN, 0);
-        //         gpio_put(LED_RED_PIN, 0);
-        //     } else {
-        //         gpio_put(LED_GREEN_PIN, 1);
-        //         gpio_put(LED_YELLOW_PIN, 1);
-        //         gpio_put(LED_RED_PIN, 1); // 0 is ON
-        //     }
-        // }
-
         // Receive data from the queue and print them
         struct lh2_measurement measurement;
         while  (queue_try_remove(&measurements_queue, &measurement)) {
@@ -170,7 +122,7 @@ int main() {
             //     measurement.selected_polynomial, measurement.lfsr_location, measurement.beamword, measurement.timestamp);
             packet[0] = (measurement.sensor & 0x03) 
                         | ((measurement.selected_polynomial & 0x3f) << 2);
-            uint32_t width = 100;
+            uint32_t width = 1000;
             measurement.beamword &= 0x1FFFF;
             measurement.lfsr_location &= 0x1FFFF;
             memcpy(&packet[1], &width, 2);
