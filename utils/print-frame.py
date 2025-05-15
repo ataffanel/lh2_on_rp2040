@@ -27,14 +27,11 @@ while True:
     if all(x == 0xFF for x in list(frame)):
         continue
 
-    unpacked = struct.unpack('<BH', frame[0:3])
+    unpacked = struct.unpack('<LLL', frame)
     sensor_id = unpacked[0] & 0x03
-    lfsr = unpacked[0] >> 2
-    width = unpacked[1]
-
-    lfsr_loc = struct.unpack('<L', frame[3:6] + b'\0')[0]
-    beamword = struct.unpack('<L', frame[6:9] + b'\0')[0]
-    timestamp = struct.unpack('<L', frame[9:12] + b'\0')[0]
+    lfsr = unpacked[0] >> 2 & 0x1F
+    lfsr_loc = unpacked[1] & 0x01FFFF
+    timestamp = unpacked[2]
 
 
-    print(f"Sensor ID: {sensor_id}, LFSR: {lfsr}, Loc: {lfsr_loc}, Beamword: {beamword:05X}, Timestamp: {timestamp}")
+    print(f"Sensor ID: {sensor_id}, LFSR: {lfsr}, Loc: {lfsr_loc}, Timestamp: {timestamp}")

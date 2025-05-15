@@ -29,7 +29,7 @@
 
 //=========================== defines ==========================================
 
-#define LH2_0_DATA_PIN  13 
+#define LH2_0_DATA_PIN  13
 #define LH2_0_ENV_PIN   12
 
 #define LH2_1_DATA_PIN  18
@@ -67,6 +67,15 @@ uint8_t sensor_3 = 3;
 
 queue_t measurements_queue;
 
+struct measurement_frame {
+    uint32_t sensor_id:2;
+    uint32_t polynomial_id:6;
+    uint32_t dummy:24;
+    uint32_t lfsr_location;
+    uint32_t timestamp;
+} __attribute__((packed));
+typedef struct measurement_frame measurement_frame_t;
+
 //=========================== prototypes ========================================
 
 void core1_entry();
@@ -76,7 +85,7 @@ void core1_entry();
 int main() {
     absolute_time_t last_sync = 0;
     static char sync_packet[12];
-    static char packet[12];
+    static measurement_frame_t packet;
 
     memset(sync_packet, 0xff, sizeof(sync_packet));
 
@@ -117,19 +126,12 @@ int main() {
         // Receive data from the queue and print them
         struct lh2_measurement measurement;
         while  (queue_try_remove(&measurements_queue, &measurement)) {
-            // printf("sen_%d poly: %d loc: %d beamword: %05x time: %d)\n",
-            //     measurement.sensor,
-            //     measurement.selected_polynomial, measurement.lfsr_location, measurement.beamword, measurement.timestamp);
-            packet[0] = (measurement.sensor & 0x03) 
-                        | ((measurement.selected_polynomial & 0x3f) << 2);
-            uint32_t width = 1000;
-            measurement.beamword &= 0x1FFFF;
-            measurement.lfsr_location &= 0x1FFFF;
-            memcpy(&packet[1], &width, 2);
-            memcpy(&packet[3], &measurement.lfsr_location, 3);
-            memcpy(&packet[6], &measurement.beamword, 3);
-            memcpy(&packet[9], &measurement.timestamp, 3);
-            stdio_put_string(packet, sizeof(packet), false, false);
+            memset(&packet, 0, sizeof(packet));
+            packet.sensor_id = measurement.sensor;
+            packet.polynomial_id = measurement.selected_polynomial;
+            packet.lfsr_location = measurement.lfsr_location;
+            packet.timestamp = measurement.timestamp;
+            stdio_put_string((char *)&packet, sizeof(packet), false, false);
         }
 
         if (absolute_time_diff_us(last_sync, get_absolute_time()) > SYNC_PERIOD_MS * 1000) {
