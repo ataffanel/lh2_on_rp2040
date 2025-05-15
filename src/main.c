@@ -29,23 +29,23 @@
 
 //=========================== defines ==========================================
 
-#define LH2_0_DATA_PIN  1 
-#define LH2_0_ENV_PIN   0
+#define LH2_0_DATA_PIN  13 
+#define LH2_0_ENV_PIN   12
 
-#define LH2_1_DATA_PIN  3
-#define LH2_1_ENV_PIN   2
+#define LH2_1_DATA_PIN  18
+#define LH2_1_ENV_PIN   17
 
-#define LH2_2_DATA_PIN  5
-#define LH2_2_ENV_PIN   4
+#define LH2_2_DATA_PIN  1
+#define LH2_2_ENV_PIN   0
 
-#define LH2_3_DATA_PIN  7
-#define LH2_3_ENV_PIN   6
+#define LH2_3_DATA_PIN  29
+#define LH2_3_ENV_PIN   28
 
 #define TIMER_DELAY_US 100000
 
-#define LED_RED_PIN  18
-#define LED_YELLOW_PIN 20  
-#define LED_GREEN_PIN  19
+#define LED_RED_PIN  22
+#define LED_YELLOW_PIN 21  
+#define LED_GREEN_PIN  20
 
 #define SYNC_PERIOD_MS 500
 

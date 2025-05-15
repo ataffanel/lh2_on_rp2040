@@ -49,8 +49,8 @@ add_compile_options(-Wall
 # Setup location for the UART on the board
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         PICO_DEFAULT_UART=1
-        PICO_DEFAULT_UART_TX_PIN=26
-        PICO_DEFAULT_UART_RX_PIN=27
+        PICO_DEFAULT_UART_TX_PIN=4
+        PICO_DEFAULT_UART_RX_PIN=5
         PICO_DEFAULT_UART_BAUD_RATE=230400
 )
 
