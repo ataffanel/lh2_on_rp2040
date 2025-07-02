@@ -83,6 +83,7 @@ void core1_entry();
 //=========================== main core #0 =============================================
 
 int main() {
+
     absolute_time_t last_sync = 0;
     static char sync_packet[12];
     static measurement_frame_t packet;
@@ -109,6 +110,11 @@ int main() {
     queue_init(&measurements_queue, sizeof(struct lh2_measurement), 10);
 
     // LH2 config, before starting the second core
+    db_lh2_init(&_lh2_0, sensor_0, LH2_0_DATA_PIN, LH2_0_ENV_PIN);
+    db_lh2_init(&_lh2_1, sensor_1, LH2_1_DATA_PIN, LH2_1_ENV_PIN);
+
+    sleep_ms(100);
+
     db_lh2_init(&_lh2_0, sensor_0, LH2_0_DATA_PIN, LH2_0_ENV_PIN);
     db_lh2_init(&_lh2_1, sensor_1, LH2_1_DATA_PIN, LH2_1_ENV_PIN);
 
@@ -144,6 +150,11 @@ int main() {
 //=========================== main core #0 =============================================
 
 void core1_entry() {
+
+    db_lh2_init(&_lh2_2, sensor_2, LH2_2_DATA_PIN, LH2_2_ENV_PIN);
+    db_lh2_init(&_lh2_3, sensor_3, LH2_3_DATA_PIN, LH2_3_ENV_PIN);
+
+    sleep_ms(100);
 
     db_lh2_init(&_lh2_2, sensor_2, LH2_2_DATA_PIN, LH2_2_ENV_PIN);
     db_lh2_init(&_lh2_3, sensor_3, LH2_3_DATA_PIN, LH2_3_ENV_PIN);

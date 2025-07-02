@@ -33,5 +33,7 @@ while True:
     lfsr_loc = unpacked[1] & 0x01FFFF
     timestamp = unpacked[2]
 
+    rotor_start = timestamp - (lfsr_loc / 6)
 
-    print(f"Sensor ID: {sensor_id}, LFSR: {lfsr}, Loc: {lfsr_loc}, Timestamp: {timestamp}")
+
+    print(f"Sensor ID: {sensor_id}, Channel: {int(lfsr/2)}, Loc: {lfsr_loc}, Timestamp: {timestamp}, Rotor Start: {rotor_start:.2f}")
