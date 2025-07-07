@@ -104,6 +104,14 @@ static pio_vars_t _pio_vars = { 0 };  ///< stores the status of the one-off conf
 void _initialize_ts4231(const uint8_t gpio_d, const uint8_t gpio_e);
 
 /**
+ * @brief wiggle the data and envelope lines in a magical way to configure the TS4631 to continuously read for LH2 sweep signals.
+ *
+ * @param[in]   gpio_d  pointer to gpio data
+ * @param[in]   gpio_e  pointer to gpio event
+ */
+void _initialize_ts4631(const uint8_t gpio_d, const uint8_t gpio_e);
+
+/**
  * @brief Configure the DMA to automatically retrieve data from the PIO TS4231 capture. And send it to the ring buffer
  *
  * @param[in] sensor:   which TS4231 sensor is associated with this data structure (valid values [0-3])
@@ -161,9 +169,16 @@ void pio_irq_handler_3(void);
 
 //=========================== public ===========================================
 
-void db_lh2_init(db_lh2_t *lh2, uint8_t sensor, const uint8_t gpio_d, const uint8_t gpio_e) {
-    // Initialize the TS4231 on power-up - this is only necessary when power-cycling
-    _initialize_ts4231(gpio_d, gpio_e);
+void db_lh2_init(db_lh2_t *lh2, uint8_t sensor, const uint8_t gpio_d, const uint8_t gpio_e, bool has_ts4631) {
+    if (!has_ts4631) {
+        // Initialize the TS4231 on power-up - this is only necessary when power-cycling
+        _initialize_ts4231(gpio_d, gpio_e);
+    } else {
+        // Initialize the TS4631 on power-up - this is only necessary when power-cycling
+        _initialize_ts4631(gpio_d, gpio_e);
+        sleep_ms(10);
+        _initialize_ts4631(gpio_d, gpio_e);  // FIXME: Initialize a second time, this is required to the chip to boot
+    }
 
     // Setup the LH2 local variables
     memset(_lh2_vars[sensor].spi_rx_buffer, 0, TS4231_CAPTURE_BUFFER_SIZE);
@@ -252,7 +267,7 @@ void db_lh2_init(db_lh2_t *lh2, uint8_t sensor, const uint8_t gpio_d, const uint
     irq_set_enabled(pio_irq, true);  // Enable the IRQ
     // Enable PIO and DMA
     _init_dma_pio_capture(sensor);
-    ts4231_capture_program_init(pio, sm, offset, gpio_d);
+    ts4231_capture_program_init(pio, sm, offset, gpio_d, gpio_e);
 }
 
 void db_lh2_start(void) {
@@ -479,6 +494,69 @@ void _initialize_ts4231(const uint8_t gpio_d, const uint8_t gpio_e) {
     sleep_us(10);
 
     gpio_set_dir(gpio_d, GPIO_IN);
+    gpio_set_dir(gpio_e, GPIO_IN);
+
+    sleep_us(50000);
+}
+
+void _initialize_ts4631(const uint8_t gpio_d, const uint8_t gpio_e) {
+
+    // The initialization sequence starts with all pin as input, the TS4631 drives both pins using pull up/down
+    gpio_set_dir(gpio_d, GPIO_IN);
+    gpio_set_dir(gpio_e, GPIO_IN);
+    gpio_init(gpio_d);
+    gpio_init(gpio_e);
+
+
+    // move TS4632 to configuration mode
+    // Busy-wait for E to be high (in between pulses)
+    while (gpio_get(gpio_e) == 0);
+
+    // Sequence to put chip in sleep mode
+    gpio_set_dir(gpio_e, GPIO_OUT);
+    gpio_put(gpio_e, 0);
+    sleep_us(100);
+    gpio_set_dir(gpio_d, GPIO_OUT);
+    gpio_put(gpio_d, 1);
+    sleep_us(100);
+    gpio_put(gpio_e, 1);
+    sleep_us(100);
+
+    // And finally in configuration mode
+    gpio_put(gpio_d, 0);
+    sleep_us(100);
+
+    // Send configuration data
+    uint16_t config_val = 0x0499;  // Magic configuration value
+
+    for (int i=0; i<15; i++) {
+        gpio_put(gpio_e, 0);
+        sleep_us(100);
+
+        config_val = config_val << 1; // Pre shift to pass one dummy bit
+        if ((config_val & 0x08000) != 0) {
+            gpio_put(gpio_d, 1);
+        } else {
+            gpio_put(gpio_d, 0);
+        }
+        
+        sleep_us(100);
+        gpio_put(gpio_e, 1);
+        sleep_us(100);
+    }
+
+    // Go back to sleep mode
+    gpio_put(gpio_d, 1);
+    sleep_us(100);
+    gpio_put(gpio_e, 0);
+    sleep_us(100);
+    gpio_put(gpio_d, 0);
+    sleep_us(1);
+    gpio_set_dir(gpio_d, GPIO_IN);
+
+    // And finally, watch mode
+    gpio_put(gpio_e, 1);
+    sleep_us(1);
     gpio_set_dir(gpio_e, GPIO_IN);
 
     sleep_us(50000);

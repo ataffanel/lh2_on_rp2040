@@ -25,17 +25,20 @@
 
 //=========================== defines ==========================================
 
-#define LH2_0_DATA_PIN 10                     // 
-#define LH2_0_ENV_PIN  (LH2_0_DATA_PIN + 1)  // The Envelope pin will be (Data pin + 1)
-#define LH2_1_DATA_PIN 12                     // 
-#define LH2_1_ENV_PIN  (LH2_1_DATA_PIN + 1)  // The Envelope pin will be (Data pin + 1)
-#define LH2_2_DATA_PIN 18                    // 
-#define LH2_2_ENV_PIN  (LH2_2_DATA_PIN + 1)  // The Envelope pin will be (Data pin + 1)
-#define LH2_3_DATA_PIN 20                   // 
-#define LH2_3_ENV_PIN  (LH2_3_DATA_PIN + 1)  // The Envelope pin will be (Data pin + 1)
+#define LH2_0_DATA_PIN  13
+#define LH2_0_ENV_PIN   12
+
+#define LH2_1_DATA_PIN  18
+#define LH2_1_ENV_PIN   17
+
+#define LH2_2_DATA_PIN  1
+#define LH2_2_ENV_PIN   0
+
+#define LH2_3_DATA_PIN  29
+#define LH2_3_ENV_PIN   28
 #define TIMER_DELAY_US 100000
 
-
+static const bool has_ts4631 = true;
 
 //=========================== variables ========================================
 
@@ -87,8 +90,8 @@ int main() {
     // cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 
     // LH2 config, before starting the second core
-    db_lh2_init(&_lh2_0, sensor_0, LH2_0_DATA_PIN, LH2_0_ENV_PIN);
-    db_lh2_init(&_lh2_1, sensor_1, LH2_1_DATA_PIN, LH2_1_ENV_PIN);
+    db_lh2_init(&_lh2_0, sensor_0, LH2_0_DATA_PIN, LH2_0_ENV_PIN, has_ts4631);
+    db_lh2_init(&_lh2_1, sensor_1, LH2_1_DATA_PIN, LH2_1_ENV_PIN, has_ts4631);
 
     // Launch the second core
     multicore_launch_core1(core1_entry);
@@ -156,8 +159,8 @@ int main() {
 
 void core1_entry() {
 
-    db_lh2_init(&_lh2_2, sensor_2, LH2_2_DATA_PIN, LH2_2_ENV_PIN);
-    db_lh2_init(&_lh2_3, sensor_3, LH2_3_DATA_PIN, LH2_3_ENV_PIN);
+    db_lh2_init(&_lh2_2, sensor_2, LH2_2_DATA_PIN, LH2_2_ENV_PIN, has_ts4631);
+    db_lh2_init(&_lh2_3, sensor_3, LH2_3_DATA_PIN, LH2_3_ENV_PIN, has_ts4631);
 
     while (true) {
         db_lh2_process_location(&_lh2_2);
