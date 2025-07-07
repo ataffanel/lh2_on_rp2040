@@ -24,6 +24,7 @@
 #include "pico/time.h"
 #include "hardware/dma.h"
 #include "hardware/pio.h"
+#include "pico/util/queue.h"
 
 //=========================== defines =========================================
 
@@ -280,7 +281,7 @@ void db_lh2_stop(void) {
     // NRF_PPI->TASKS_CHG[PPI_SPI_GROUP].DIS = 1;
 }
 
-void db_lh2_process_location(db_lh2_t *lh2) {
+void db_lh2_process_location(db_lh2_t *lh2, queue_t *measurements_queue) {
     uint8_t sensor = lh2->sensor;  // Make a local copy of the sensor number, for readability's sake
 
     // There is no TS4231 data to process, return early.
@@ -313,15 +314,11 @@ void db_lh2_process_location(db_lh2_t *lh2) {
 
     // perform the demodulation received packets
     // convert the SPI reading to bits via zero-crossing counter demodulation and differential/biphasic manchester decoding.
-    gpio_put(1, 1);
     uint64_t temp_bits_sweep = _demodulate_light(temp_spi_bits);
-    gpio_put(1, 0);
 
     // figure out which polynomial the data belongs  to
     int8_t temp_bit_offset = 0;  // default offset
-    gpio_put(2, 1);
     uint8_t temp_selected_polynomial = _determine_polynomial(temp_bits_sweep, &temp_bit_offset);
-    gpio_put(2, 0);
 
     // If there was an error with the polynomial, leave without updating anything
     if (temp_selected_polynomial == LH2_POLYNOMIAL_ERROR_INDICATOR) {
@@ -349,11 +346,9 @@ void db_lh2_process_location(db_lh2_t *lh2) {
     }
 
     // Compute the lfsr location.
-    gpio_put(3, 1);
     uint32_t temp_lfsr_loc = _lfsr_index_search(&_lh2_vars[sensor].checkpoint,
                                                 temp_selected_polynomial,
                                                 temp_lfsr_bits);
-    gpio_put(3, 0);
 
     // Check that the count didn't fall on an illegal value
     if (temp_lfsr_loc != LH2_LFSR_SEARCH_ERROR_INDICATOR) {
@@ -382,6 +377,16 @@ void db_lh2_process_location(db_lh2_t *lh2) {
     lh2->locations[sweep][basestation].selected_polynomial = temp_selected_polynomial;
     // Mark the data point as processed
     lh2->data_ready[sweep][basestation] = DB_LH2_PROCESSED_DATA_AVAILABLE;
+
+    // Push measurement in the queue
+    struct lh2_measurement measurement = {
+        .sensor              = sensor,
+        .timestamp           = to_us_since_boot(temp_timestamp),
+        .selected_polynomial = temp_selected_polynomial,
+        .lfsr_location       = temp_lfsr_loc,
+        .beamword            = temp_bits_sweep & 0x1FFFF,   // 17 bits
+    };
+    queue_add_blocking(measurements_queue, &measurement);
 }
 
 //=========================== private ==========================================
@@ -725,7 +730,6 @@ void _pio_irq_handler_generic(uint8_t sensor) {
     PIO     pio = _lh2_vars[sensor].pio;
     uint8_t sm  = _lh2_vars[sensor].sm;
 
-    gpio_put(0, 1);
     // Read the current time.
     absolute_time_t timestamp = get_absolute_time();
     // Add new reading to the ring buffer
@@ -736,8 +740,6 @@ void _pio_irq_handler_generic(uint8_t sensor) {
     dma_channel_set_write_addr(_lh2_vars[sensor].dma_channel, _lh2_vars[sensor].spi_rx_buffer, true);
     // Clear the PIO interrupt
     pio_interrupt_clear(pio, sm);
-
-    gpio_put(0, 0);
 }
 
 // Each ISR calls the same handler, for the appropriate sensor index.

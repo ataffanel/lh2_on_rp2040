@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "pico/util/queue.h"
+
 // Definition needed for test builds, who don't have access to the full pico-SDK,
 // and thus, have no idea what an absolute_time_t is.
 #ifndef _PICO_TYPES_H
@@ -60,6 +62,14 @@ typedef struct {
     uint8_t                   sensor;                                              ///< Which TS4231 sensor is associated with this data structure (valid values [0-3]).
 } db_lh2_t;
 
+struct lh2_measurement {
+    uint8_t sensor;
+    uint32_t timestamp;
+    uint8_t selected_polynomial;
+    uint32_t lfsr_location;
+    uint32_t beamword;
+};
+
 //=========================== public ===========================================
 
 /**
@@ -77,7 +87,7 @@ void db_lh2_init(db_lh2_t *lh2, uint8_t sensor, const uint8_t gpio_d, const uint
  *
  * @param[in]   lh2 pointer to the lh2 instance
  */
-void db_lh2_process_location(db_lh2_t *lh2);
+void db_lh2_process_location(db_lh2_t *lh2, queue_t *measurements_queue);
 
 /**
  * @brief Start the LH2 frame acquisition

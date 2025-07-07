@@ -17,8 +17,10 @@
 // #include "pico/cyw43_arch.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "pico/multicore.h"
+#include "pico/util/queue.h"
 #include "hardware/pio.h"
 #include "hardware/dma.h"
 #include "hardware/clocks.h"
@@ -38,6 +40,12 @@
 #define LH2_3_ENV_PIN   28
 #define TIMER_DELAY_US 100000
 
+#define LED_RED_PIN  22
+#define LED_YELLOW_PIN 21  
+#define LED_GREEN_PIN  20
+
+#define SYNC_PERIOD_MS 500
+
 static const bool has_ts4631 = true;
 
 //=========================== variables ========================================
@@ -55,6 +63,17 @@ uint8_t sensor_1 = 1;
 uint8_t sensor_2 = 2;
 uint8_t sensor_3 = 3;
 
+static queue_t measurements_queue;
+
+struct measurement_frame {
+    uint32_t sensor_id:2;
+    uint32_t polynomial_id:6;
+    uint32_t dummy:24;
+    uint32_t lfsr_location;
+    uint32_t timestamp;
+} __attribute__((packed));
+typedef struct measurement_frame measurement_frame_t;
+
 //=========================== prototypes ========================================
 
 void core1_entry();
@@ -65,29 +84,21 @@ int main() {
     // configure the clock for 128MHz
     clk_conf_OK = set_sys_clock_khz(128000, true);
 
-    // // power up sensor 1
-    // gpio_init(4);
-    // gpio_set_dir(4, GPIO_OUT);
-    // gpio_put(4, 1);
-
-    // // power up sensor 2
-    // gpio_init(14);
-    // gpio_set_dir(14, GPIO_OUT);
-    // gpio_put(14, 1);
-
-    // // power up sensor 3
-    // gpio_init(20);
-    // gpio_set_dir(20, GPIO_OUT);
-    // gpio_put(20, 1);
-
     // init the USB UART
     stdio_init_all();
-    sleep_ms(3000);
-    printf("Start code\n");
 
-    // set-up the on-board LED
-    // cyw43_arch_init();
-    // cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+    // init the LEDs
+    gpio_init(LED_RED_PIN);
+    gpio_set_dir(LED_RED_PIN, GPIO_OUT);
+    gpio_init(LED_YELLOW_PIN);
+    gpio_set_dir(LED_YELLOW_PIN, GPIO_OUT);
+    gpio_init(LED_GREEN_PIN);
+    gpio_set_dir(LED_GREEN_PIN, GPIO_OUT);
+    gpio_put(LED_RED_PIN, 1);               // 1 is OFF
+    gpio_put(LED_YELLOW_PIN, 1);
+    gpio_put(LED_GREEN_PIN, 1);
+
+    queue_init(&measurements_queue, sizeof(struct lh2_measurement), 100);
 
     // LH2 config, before starting the second core
     db_lh2_init(&_lh2_0, sensor_0, LH2_0_DATA_PIN, LH2_0_ENV_PIN, has_ts4631);
@@ -96,61 +107,30 @@ int main() {
     // Launch the second core
     multicore_launch_core1(core1_entry);
 
-    // Debug Gpio
-    gpio_init(0);
-    gpio_set_dir(0, GPIO_OUT);
-    gpio_init(1);
-    gpio_set_dir(1, GPIO_OUT);
-    gpio_init(2);
-    gpio_set_dir(2, GPIO_OUT);
-    gpio_init(3);
-    gpio_set_dir(3, GPIO_OUT);
-    gpio_put(0, 1);
-    gpio_put(1, 1);
-    gpio_put(2, 1);
-    gpio_put(3, 1);
-
-    timer_0 = get_absolute_time();
-
+    absolute_time_t last_sync = 0;
+    static char sync_packet[12];
+    memset(sync_packet, 0xff, sizeof(sync_packet));
+    static measurement_frame_t packet;
     while (true) {
 
         // the location function has to be running all the time
-        db_lh2_process_location(&_lh2_0);
-        db_lh2_process_location(&_lh2_1);
+        db_lh2_process_location(&_lh2_0, &measurements_queue);
+        db_lh2_process_location(&_lh2_1, &measurements_queue);
 
-        if (absolute_time_diff_us(timer_0, get_absolute_time()) > TIMER_DELAY_US) {
+        // Receive data from the queue and print them
+        struct lh2_measurement measurement;
+        while  (queue_try_remove(&measurements_queue, &measurement)) {
+            memset(&packet, 0, sizeof(packet));
+            packet.sensor_id = measurement.sensor;
+            packet.polynomial_id = measurement.selected_polynomial;
+            packet.lfsr_location = measurement.lfsr_location;
+            packet.timestamp = measurement.timestamp;
+            stdio_put_string((char *)&packet, sizeof(packet), false, false);
+        }
 
-            // // Print the first two base stations of all 4 sensors
-            // printf("sen_0 (%d-%d %d-%d %d-%d %d-%d)   \tsen_1 (%d-%d %d-%d %d-%d %d-%d)   \tsen_2 (%d-%d %d-%d %d-%d %d-%d)   \tsen_3 (%d-%d %d-%d %d-%d %d-%d)\n",
-            //        _lh2_0.locations[0][0].selected_polynomial, _lh2_0.locations[0][0].lfsr_location, _lh2_0.locations[1][0].selected_polynomial, _lh2_0.locations[1][0].lfsr_location,
-            //        _lh2_0.locations[0][1].selected_polynomial, _lh2_0.locations[0][1].lfsr_location, _lh2_0.locations[1][1].selected_polynomial, _lh2_0.locations[1][1].lfsr_location,
-            //        _lh2_1.locations[0][0].selected_polynomial, _lh2_1.locations[0][0].lfsr_location, _lh2_1.locations[1][0].selected_polynomial, _lh2_1.locations[1][0].lfsr_location,
-            //        _lh2_1.locations[0][1].selected_polynomial, _lh2_1.locations[0][1].lfsr_location, _lh2_1.locations[1][1].selected_polynomial, _lh2_1.locations[1][1].lfsr_location,
-            //        _lh2_2.locations[0][0].selected_polynomial, _lh2_2.locations[0][0].lfsr_location, _lh2_2.locations[1][0].selected_polynomial, _lh2_2.locations[1][0].lfsr_location,
-            //        _lh2_2.locations[0][1].selected_polynomial, _lh2_2.locations[0][1].lfsr_location, _lh2_2.locations[1][1].selected_polynomial, _lh2_2.locations[1][1].lfsr_location,
-            //        _lh2_3.locations[0][0].selected_polynomial, _lh2_3.locations[0][0].lfsr_location, _lh2_3.locations[1][0].selected_polynomial, _lh2_3.locations[1][0].lfsr_location,
-            //        _lh2_3.locations[0][1].selected_polynomial, _lh2_3.locations[0][1].lfsr_location, _lh2_3.locations[1][1].selected_polynomial, _lh2_3.locations[1][1].lfsr_location);
-            
-            // Print the first sweep of all basestations of Sensor 0
-            printf("%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d\t%d-%d)\n",
-                _lh2_0.locations[0][0].selected_polynomial, _lh2_0.locations[0][0].lfsr_location,
-                _lh2_0.locations[0][1].selected_polynomial, _lh2_0.locations[0][1].lfsr_location,
-                _lh2_0.locations[0][2].selected_polynomial, _lh2_0.locations[0][2].lfsr_location,
-                _lh2_0.locations[0][3].selected_polynomial, _lh2_0.locations[0][3].lfsr_location,
-                _lh2_0.locations[0][4].selected_polynomial, _lh2_0.locations[0][4].lfsr_location,
-                _lh2_0.locations[0][5].selected_polynomial, _lh2_0.locations[0][5].lfsr_location,
-                _lh2_0.locations[0][6].selected_polynomial, _lh2_0.locations[0][6].lfsr_location,
-                _lh2_0.locations[0][7].selected_polynomial, _lh2_0.locations[0][7].lfsr_location,
-                _lh2_0.locations[0][8].selected_polynomial, _lh2_0.locations[0][8].lfsr_location,
-                _lh2_0.locations[0][9].selected_polynomial, _lh2_0.locations[0][9].lfsr_location,
-                _lh2_0.locations[0][10].selected_polynomial, _lh2_0.locations[0][10].lfsr_location,
-                _lh2_0.locations[0][11].selected_polynomial, _lh2_0.locations[0][11].lfsr_location,
-                _lh2_0.locations[0][12].selected_polynomial, _lh2_0.locations[0][12].lfsr_location,
-                _lh2_0.locations[0][13].selected_polynomial, _lh2_0.locations[0][13].lfsr_location,
-                _lh2_0.locations[0][14].selected_polynomial, _lh2_0.locations[0][14].lfsr_location,
-                _lh2_0.locations[0][15].selected_polynomial, _lh2_0.locations[0][15].lfsr_location);
-
-            timer_0 = get_absolute_time();
+        if (absolute_time_diff_us(last_sync, get_absolute_time()) > SYNC_PERIOD_MS * 1000) {
+            last_sync = get_absolute_time();
+            stdio_put_string(sync_packet, sizeof(sync_packet), false, false);
         }
     }
 }
@@ -163,8 +143,8 @@ void core1_entry() {
     db_lh2_init(&_lh2_3, sensor_3, LH2_3_DATA_PIN, LH2_3_ENV_PIN, has_ts4631);
 
     while (true) {
-        db_lh2_process_location(&_lh2_2);
-        db_lh2_process_location(&_lh2_3);
+        db_lh2_process_location(&_lh2_2, &measurements_queue);
+        db_lh2_process_location(&_lh2_3, &measurements_queue);
     }
 }
 
